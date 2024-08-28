@@ -1,14 +1,9 @@
 ﻿
 using CommunityToolkit.Mvvm.ComponentModel;
-using ControlzEx.Standard;
-using Microsoft.VisualBasic;
-using System;
+using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
-using System.Net;
-using System.Printing;
+using System.ComponentModel.Design;
 using System.Reflection;
-using System.Windows.Controls;
-using System.Windows.Markup;
 
 namespace UdsClient.ViewModels
 {
@@ -21,6 +16,8 @@ namespace UdsClient.ViewModels
 		public UdsClientMainViewModel()
 		{
 			Version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+
+			SendCommand = new RelayCommand<string>(Send);
 
 			UDSSessionsList = new ObservableCollection<string>()
 			{
@@ -55,5 +52,12 @@ namespace UdsClient.ViewModels
 				"Negative Response",
 			};
 		}
+
+		private void Send(string session)
+		{
+
+		}
+
+		public RelayCommand<string> SendCommand { get; private set; }
 	}
 }

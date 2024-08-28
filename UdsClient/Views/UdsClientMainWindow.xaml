@@ -8,6 +8,8 @@
                  mc:Ignorable="d"
                  Title="UDS Client" Height="800" Width="800"
                  WindowStartupLocation="CenterScreen">
+
+    
     
     <Grid>
         <Grid.RowDefinitions>
@@ -15,26 +17,65 @@
             <RowDefinition Height="30" />
         </Grid.RowDefinitions>
 
-        <ListView ItemsSource="{Binding UDSSessionsList}"
-                  SelectionMode="Single">
-            <ListView.ItemTemplate>
-                <DataTemplate>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition />
-                            <ColumnDefinition Width="100"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <TextBlock Grid.Column="0" Text="{Binding}" FontSize="14"/>
+        <DataGrid ItemsSource="{Binding UDSSessionsList}"
+                  AutoGenerateColumns="False"
+                  HeadersVisibility="None"
+                  FontSize="15"
+                  GridLinesVisibility="Horizontal">
 
-                        <Button Grid.Column="1" Content="Send" 
-                                Command="{Binding SendServiceCommand}"
-                                CommandParameter="{Binding}"/>
+            <DataGrid.Columns>
 
-                    </Grid>
-                </DataTemplate>
-            </ListView.ItemTemplate>
-        </ListView>
+                <DataGridTextColumn Binding="{Binding}" IsReadOnly="True" MinWidth="300"/>
+
+                <DataGridTemplateColumn >
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Button Content="Send" 
+                                    Command="{Binding DataContext.SendCommand, 
+                                                      RelativeSource={RelativeSource Mode=FindAncestor, AncestorType=Window}}" 
+                                    CommandParameter="{Binding}">
+
+                                <Button.Resources>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="Button">
+
+                                                    <Border x:Name="brdr"
+                                                            BorderBrush="{DynamicResource MahApps.Brushes.Gray1}"
+                                                            BorderThickness="1"
+                                                            Padding="2, 0">
+                                                        <TextBlock Text="Send" 
+                                                                   VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                                    </Border>
+
+                                                    <ControlTemplate.Triggers>
+
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="brdr" Property="Background" Value="{DynamicResource MahApps.Brushes.Gray8}"/>
+                                                        </Trigger>
+
+                                                        <Trigger Property="IsPressed" Value="True">
+                                                            <Setter TargetName="brdr" Property="Background" Value="{DynamicResource MahApps.Brushes.Gray7}"/>
+                                                        </Trigger>
+
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </Button.Resources>
+                                
+                            </Button>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+            </DataGrid.Columns>
+            
+        </DataGrid>
+
+        
 
         <Border Grid.Row="4" Background="{DynamicResource MahApps.Brushes.Accent}">
             <StackPanel Orientation="Horizontal">
