@@ -4,6 +4,8 @@ using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
 using System.ComponentModel.Design;
 using System.Reflection;
+using System.Windows;
+using UdsClient.Services;
 
 namespace UdsClient.ViewModels
 {
@@ -12,6 +14,8 @@ namespace UdsClient.ViewModels
 		public string Version { get; set; }
 
 		public ObservableCollection<string> UDSSessionsList { get; set; }
+
+		private UdsSessionsSender _udsSessionsSender;
 
 		public UdsClientMainViewModel()
 		{
@@ -49,13 +53,32 @@ namespace UdsClient.ViewModels
 				"Transfer Data",
 				"Request Transfer Exit",
 				"Request File Transfer",
-				"Negative Response",
+			//	"Negative Response", // TODO: was not found in the PCAN example
 			};
+
+			_udsSessionsSender = new UdsSessionsSender();
+			_udsSessionsSender.Init();
 		}
 
-		private void Send(string session)
+		private void Send(string sessionFromList)
 		{
+			string session = sessionFromList.ToLower();
+			session = session.Replace(" ", string.Empty);
 
+			if (_udsSessionsSender.DescriptionToMethodDict.ContainsKey(session) == false)
+			{
+				MessageBox.Show($"Session {sessionFromList} not found");
+				return;
+			}
+
+			MethodInfo method = _udsSessionsSender.DescriptionToMethodDict[session];
+			method?.Invoke(
+				_udsSessionsSender,
+				new object[] 
+				{
+					_udsSessionsSender.Client_handle,
+					_udsSessionsSender.Config,
+				});
 		}
 
 		public RelayCommand<string> SendCommand { get; private set; }

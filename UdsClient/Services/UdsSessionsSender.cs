@@ -1,48 +1,77 @@
 ﻿
 using Peak.Can.IsoTp;
 using Peak.Can.Uds;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace UdsClient.Services
 {
     public class UdsSessionsSender
     {
-		private cantp_handle _client_handle;
-		private uds_msgconfig _config;
+		public cantp_handle Client_handle;
+		public uds_msgconfig Config;
+
+		public Dictionary<string, MethodInfo> DescriptionToMethodDict;
 
 		public void Init()
 		{
 			uds_status status;
 			uint dw_buffer;
-			_config = new uds_msgconfig();
+			Config = new uds_msgconfig();
 
 			// Set the PCAN-Channel to use
-			_client_handle = cantp_handle.PCANTP_HANDLE_USBBUS1; // TODO: modify the value according to your available PCAN devices.
+			Client_handle = cantp_handle.PCANTP_HANDLE_USBBUS1; // TODO: modify the value according to your available PCAN devices.
 
 			// Initializing of the UDS Communication session
-			status = UDSApi.Initialize_2013(_client_handle, cantp_baudrate.PCANTP_BAUDRATE_500K);
+			status = UDSApi.Initialize_2013(Client_handle, cantp_baudrate.PCANTP_BAUDRATE_500K);
 			
 			// Define TimeOuts
 			dw_buffer = CanTpApi.PCANTP_ISO_TIMEOUTS_15765_4;
-			status = UDSApi.SetValue_2013(_client_handle, uds_parameter.PUDS_PARAMETER_ISO_TIMEOUTS, ref dw_buffer, sizeof(uint));
+			status = UDSApi.SetValue_2013(Client_handle, uds_parameter.PUDS_PARAMETER_ISO_TIMEOUTS, ref dw_buffer, sizeof(uint));
 			
 			// Define Network Address Information used for all the tests
-			_config.can_id = (uint)0xFFFFFFFF;
-			_config.can_msgtype = cantp_can_msgtype.PCANTP_CAN_MSGTYPE_STANDARD;
-			_config.nai.protocol = uds_msgprotocol.PUDS_MSGPROTOCOL_ISO_15765_2_11B_NORMAL;
-			_config.nai.target_type = cantp_isotp_addressing.PCANTP_ISOTP_ADDRESSING_PHYSICAL;
-			_config.type = uds_msgtype.PUDS_MSGTYPE_USDT;
-			_config.nai.source_addr = (ushort)uds_address.PUDS_ADDRESS_ISO_15765_4_ADDR_TEST_EQUIPMENT;
-			_config.nai.target_addr = (ushort)uds_address.PUDS_ADDRESS_ISO_15765_4_ADDR_ECU_1;
+			Config.can_id = (uint)0xFFFFFFFF;
+			Config.can_msgtype = cantp_can_msgtype.PCANTP_CAN_MSGTYPE_STANDARD;
+			Config.nai.protocol = uds_msgprotocol.PUDS_MSGPROTOCOL_ISO_15765_2_11B_NORMAL;
+			Config.nai.target_type = cantp_isotp_addressing.PCANTP_ISOTP_ADDRESSING_PHYSICAL;
+			Config.type = uds_msgtype.PUDS_MSGTYPE_USDT;
+			Config.nai.source_addr = (ushort)uds_address.PUDS_ADDRESS_ISO_15765_4_ADDR_TEST_EQUIPMENT;
+			Config.nai.target_addr = (ushort)uds_address.PUDS_ADDRESS_ISO_15765_4_ADDR_ECU_1;
+
+			InitMethodsDict();
 		}
 
-		static uint Reverse32(uint v)
+
+		private void InitMethodsDict()
+		{
+			DescriptionToMethodDict = new Dictionary<string, MethodInfo>();
+
+			Type UdsSessionsSender_Type = typeof(UdsSessionsSender);
+			MethodInfo[] methodsList = UdsSessionsSender_Type.GetMethods();
+
+			foreach (MethodInfo method in methodsList)
+			{
+				if (method.IsPublic == false)
+					continue;
+
+				if(method.Name.StartsWith("Send") == false)
+					continue;
+
+				string description = method.Name.Replace("Send", string.Empty);
+				description = description.ToLower();
+				DescriptionToMethodDict.Add(description, method);
+			}
+		}
+
+
+
+		private uint Reverse32(uint v)
 		{
 
 			return (v & 0x000000FF) << 24 | (v & 0x0000FF00) << 8 | (v & 0x00FF0000) >> 8 | ((v & 0xFF000000) >> 24) & 0x000000FF;
 		}
 
-		public void UInt32ToBytes(uint dw_buffer, byte[] byte_buffer)
+		private void UInt32ToBytes(uint dw_buffer, byte[] byte_buffer)
 		{
 			byte_buffer[0] = (byte)(dw_buffer & 0x000000FF);
 			byte_buffer[1] = (byte)((dw_buffer & 0x0000FF00) >> 8);
@@ -142,7 +171,7 @@ namespace UdsClient.Services
 			
 		}
 
-		public void testECUReset(cantp_handle channel, uds_msgconfig config)
+		public void SendECUReset(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -170,7 +199,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service SecurityAccess</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testSecurityAccess(cantp_handle channel, uds_msgconfig config)
+		public void SendSecurityAccess(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -204,7 +233,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service CommunicationControl</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testCommunicationControl(cantp_handle channel, uds_msgconfig config)
+		public void SendCommunicationControl(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -233,7 +262,7 @@ namespace UdsClient.Services
 		/// <summary>UDS Call Service TesterPresent</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testTesterPresent(cantp_handle channel, uds_msgconfig config)
+		public void SendTesterPresent(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -313,7 +342,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service SecuredDataTransmission</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testSecuredDataTransmission(cantp_handle channel, uds_msgconfig config)
+		public void SendSecuredDataTransmission(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -415,7 +444,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service ControlDTCSetting</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testControlDTCSetting(cantp_handle channel, uds_msgconfig config)
+		public void SendControlDTCSettings(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -447,7 +476,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service ResponseOnEvent</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testResponseOnEvent(cantp_handle channel, uds_msgconfig config)
+		public void SendResponseOnEvent(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -477,7 +506,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service LinkControl</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testLinkControl(cantp_handle channel, uds_msgconfig config)
+		public void SendLinkControl(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -517,7 +546,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service ReadDataByIdentifier</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testReadDataByIdentifier(cantp_handle channel, uds_msgconfig config)
+		public void SendReadDataByIdentifier(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -542,7 +571,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service ReadMemoryByAddress</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testReadMemoryByAddress(cantp_handle channel, uds_msgconfig config)
+		public void SendReadMemoryByAddress(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -575,7 +604,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service ReadScalingDataByIdentifier</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testReadScalingDataByIdentifier(cantp_handle channel, uds_msgconfig config)
+		public void SendReadScalingDataByIdentifier(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -599,7 +628,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service ReadDataByPeriodicIdentifier</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testReadDataByPeriodicIdentifier(cantp_handle channel, uds_msgconfig config)
+		public void SendReadDataByIdentifierPeriodic(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -627,7 +656,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service DynamicallyDefineDataIdentifier</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testDynamicallyDefineDataIdentifier(cantp_handle channel, uds_msgconfig config)
+		public void SendDynamicallyDefineDataIdentifier(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -705,7 +734,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service WriteDataByIdentifier</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testWriteDataByIdentifier(cantp_handle channel, uds_msgconfig config)
+		public void SendWriteDataByIdentifier(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -732,7 +761,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service WriteMemoryByAddress</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testWriteMemoryByAddress(cantp_handle channel, uds_msgconfig config)
+		public void SendWriteMemoryByAddress(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -769,7 +798,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service ClearDiagnosticInformation</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testClearDiagnosticInformation(cantp_handle channel, uds_msgconfig config)
+		public void SendClearDiagnosticInformation(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -805,7 +834,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service ReadDTCInformation</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testReadDTCInformation(cantp_handle channel, uds_msgconfig config)
+		public void SendReadDTCInformation(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -968,7 +997,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service InputOutputControlByIdentifier</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testInputOutputControlByIdentifier(cantp_handle channel, uds_msgconfig config)
+		public void SendInputOutputControlByIdentifier(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -1002,7 +1031,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service RoutineControl</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testRoutineControl(cantp_handle channel, uds_msgconfig config)
+		public void SendRoutineControl(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -1033,7 +1062,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service RequestDownload</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testRequestDownload(cantp_handle channel, uds_msgconfig config)
+		public void SendRequestDownload(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -1067,7 +1096,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service RequestUpload</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testRequestUpload(cantp_handle channel, uds_msgconfig config)
+		public void SendRequestUpload(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -1100,7 +1129,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service RequestTransferExit</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testRequestTransferExit(cantp_handle channel, uds_msgconfig config)
+		public void SendRequestTransferExit(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -1130,7 +1159,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service TransferData</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testTransferData(cantp_handle channel, uds_msgconfig config)
+		public void SendTransferData(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -1160,7 +1189,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service TransferData with MAX_DATA length</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testTransferDataBigMessage(cantp_handle channel, uds_msgconfig config)
+		public void SendTransferDataBigMessage(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -1191,7 +1220,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service TransferData</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testTransferDataMultipleFunctionalMessage(cantp_handle channel, uds_msgconfig config)
+		public void SendTransferDataMultipleFunctionalMessage(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -1227,7 +1256,7 @@ namespace UdsClient.Services
 		/// <summary>Sample to use event</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testUsingEvent(cantp_handle channel, uds_msgconfig config)
+		public void SendUsingEvent(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_status read_status;
@@ -1305,7 +1334,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service RequestFileTransfer</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testRequestFileTransfer(cantp_handle channel, uds_msgconfig config)
+		public void SendRequestFileTransfer(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -1336,7 +1365,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service AccessTimingParameter</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testAccessTimingParameter(cantp_handle channel, uds_msgconfig config)
+		public void SendAccessTimingParameters(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new uds_msg();
@@ -1362,7 +1391,7 @@ namespace UdsClient.Services
 		/// <summary>Call UDS Service Authentication</summary>
 		/// <param name="channel">cantp channel handle</param>
 		/// <param name="config">Configuration of the request message (type, network address information...)</param>
-		public void testAuthentication(cantp_handle channel, uds_msgconfig config)
+		public void SendAuthentication(cantp_handle channel, uds_msgconfig config)
 		{
 			uds_status status;
 			uds_msg request = new Peak.Can.Uds.uds_msg();
