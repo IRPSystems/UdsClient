@@ -11,11 +11,17 @@ namespace UdsClient.ViewModels
 {
     public class UdsClientMainViewModel: ObservableObject
     {
+		#region Properties and Fields
+
 		public string Version { get; set; }
 
 		public ObservableCollection<string> UDSSessionsList { get; set; }
 
 		private UdsSessionsSender _udsSessionsSender;
+
+		#endregion Properties and Fields
+
+		#region Constructor
 
 		public UdsClientMainViewModel()
 		{
@@ -60,6 +66,10 @@ namespace UdsClient.ViewModels
 			_udsSessionsSender.Init();
 		}
 
+		#endregion Constructor
+
+		#region Methods
+
 		private void Send(string sessionFromList)
 		{
 			string session = sessionFromList.ToLower();
@@ -81,6 +91,12 @@ namespace UdsClient.ViewModels
 				});
 		}
 
+		#endregion Methods
+
+		#region Commands
+
 		public RelayCommand<string> SendCommand { get; private set; }
+
+		#endregion Commands
 	}
 }

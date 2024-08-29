@@ -8,10 +8,16 @@ namespace UdsClient.Services
 {
     public class UdsSessionsSender
     {
+		#region Prperties and Fields
+
 		public cantp_handle Client_handle;
 		public uds_msgconfig Config;
 
 		public Dictionary<string, MethodInfo> DescriptionToMethodDict;
+
+		#endregion Prperties and Fields
+
+		#region Methods
 
 		public void Init()
 		{
@@ -1504,5 +1510,7 @@ namespace UdsClient.Services
 			status = UDSApi.MsgFree_2013(ref confirmation);
 			
 		}
+
+		#endregion Methods
 	}
 }
