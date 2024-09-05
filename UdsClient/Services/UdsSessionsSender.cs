@@ -19,7 +19,7 @@ namespace UdsClient.Services
 
 		#region Methods
 
-		public void Init()
+		public void Init(uint canID)
 		{
 			uds_status status;
 			uint dw_buffer;
@@ -36,7 +36,7 @@ namespace UdsClient.Services
 			status = UDSApi.SetValue_2013(Client_handle, uds_parameter.PUDS_PARAMETER_ISO_TIMEOUTS, ref dw_buffer, sizeof(uint));
 			
 			// Define Network Address Information used for all the tests
-			Config.can_id = (uint)0xFFFFFFFF;
+			Config.can_id = canID;
 			Config.can_msgtype = cantp_can_msgtype.PCANTP_CAN_MSGTYPE_STANDARD;
 			Config.nai.protocol = uds_msgprotocol.PUDS_MSGPROTOCOL_ISO_15765_2_11B_NORMAL;
 			Config.nai.target_type = cantp_isotp_addressing.PCANTP_ISOTP_ADDRESSING_PHYSICAL;
